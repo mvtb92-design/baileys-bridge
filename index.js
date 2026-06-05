@@ -48,7 +48,9 @@ app.post('/send', async (req, res) => {
   if (secret !== BRIDGE_SECRET) return res.status(401).json({ error: 'Unauthorized' });
   if (!isConnected) return res.status(503).json({ error: 'Bot nao conectado' });
   try {
-    const chatId = number.includes('@') ? number : number + '@c.us';
+    // Tenta resolver o numero via getNumberId (lida com LID automaticamente)
+    const numId = await client.getNumberId(number.replace(/[^0-9]/g, ''));
+    const chatId = numId ? numId._serialized : (number.includes('@') ? number : number + '@c.us');
     await client.sendMessage(chatId, text);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }

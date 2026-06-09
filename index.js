@@ -7,6 +7,10 @@ const path = require('path');
 const fs = require('fs');
 
 const SESSION_PATH = process.env.SESSION_PATH || '/data/session';
+
+// Números autorizados a usar o bot (sem + e sem @)
+const NUMEROS_AUTORIZADOS = (process.env.NUMEROS_AUTORIZADOS || '5537999310342,5537991288226').split(',').map(n => n.trim());
+console.log('[AUTH] Numeros autorizados:', NUMEROS_AUTORIZADOS);
 const WEBHOOK_URL = process.env.WEBHOOK_URL || '';
 const PORT = parseInt(process.env.PORT || '4000');
 const BRIDGE_SECRET = process.env.BRIDGE_SECRET || 'financas2026';

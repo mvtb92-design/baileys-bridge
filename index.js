@@ -47,6 +47,36 @@ app.get('/qr.png', async (req, res) => {
   } catch(e) { res.status(500).send(e.message); }
 });
 
+app.post('/restart', async (req, res) => {
+  const { secret } = req.body || {};
+  if (secret !== BRIDGE_SECRET) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({ ok: true, message: 'Reiniciando...' });
+  setTimeout(async () => {
+    try {
+      isConnected = false;
+      currentQR = null;
+      qrBase64 = null;
+      await client.destroy().catch(()=>{});
+      await new Promise(r => setTimeout(r, 3000));
+      await client.initialize().catch(e => console.log('[RESTART] erro init:', e.message));
+    } catch(e) { console.log('[RESTART] erro:', e.message); }
+  }, 500);
+});
+
+app.get('/restart', async (req, res) => {
+  isConnected = false;
+  currentQR = null;
+  qrBase64 = null;
+  res.json({ ok: true, message: 'Reiniciando client...' });
+  setTimeout(async () => {
+    try {
+      await client.destroy().catch(()=>{});
+      await new Promise(r => setTimeout(r, 3000));
+      await client.initialize().catch(e => console.log('[RESTART] erro:', e.message));
+    } catch(e) { console.log('[RESTART] erro:', e.message); }
+  }, 500);
+});
+
 app.post('/send', async (req, res) => {
   const { secret, number, text } = req.body || {};
   if (secret !== BRIDGE_SECRET) return res.status(401).json({ error: 'Unauthorized' });
@@ -57,7 +87,19 @@ app.post('/send', async (req, res) => {
     const chatId = numId ? numId._serialized : (number.includes('@') ? number : number + '@c.us');
     await client.sendMessage(chatId, text);
     res.json({ ok: true });
-  } catch(e) { res.status(500).json({ error: e.message }); }
+  } catch(e) {
+    // Se frame detached, marca como desconectado para gerar novo QR
+    if(e.message && e.message.includes('detached Frame')) {
+      isConnected = false;
+      currentQR = null;
+      qrBase64 = null;
+      setTimeout(async () => {
+        try { await client.destroy().catch(()=>{}); await client.initialize().catch(()=>{}); } catch(e2){}
+      }, 1000);
+      return res.status(503).json({ error: 'Sessao corrompida, reconectando...', reconnecting: true });
+    }
+    res.status(500).json({ error: e.message });
+  }
 });
 
 http.createServer(app).listen(PORT, '0.0.0.0', () => {

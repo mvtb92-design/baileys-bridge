@@ -47,34 +47,16 @@ app.get('/qr.png', async (req, res) => {
   } catch(e) { res.status(500).send(e.message); }
 });
 
-app.post('/restart', async (req, res) => {
+app.post('/restart', (req, res) => {
   const { secret } = req.body || {};
   if (secret !== BRIDGE_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  res.json({ ok: true, message: 'Reiniciando...' });
-  setTimeout(async () => {
-    try {
-      isConnected = false;
-      currentQR = null;
-      qrBase64 = null;
-      await client.destroy().catch(()=>{});
-      await new Promise(r => setTimeout(r, 3000));
-      await client.initialize().catch(e => console.log('[RESTART] erro init:', e.message));
-    } catch(e) { console.log('[RESTART] erro:', e.message); }
-  }, 500);
+  res.json({ ok: true, message: 'Encerrando processo para Railway reiniciar...' });
+  setTimeout(() => { console.log('[RESTART] Encerrando processo...'); process.exit(0); }, 500);
 });
 
-app.get('/restart', async (req, res) => {
-  isConnected = false;
-  currentQR = null;
-  qrBase64 = null;
-  res.json({ ok: true, message: 'Reiniciando client...' });
-  setTimeout(async () => {
-    try {
-      await client.destroy().catch(()=>{});
-      await new Promise(r => setTimeout(r, 3000));
-      await client.initialize().catch(e => console.log('[RESTART] erro:', e.message));
-    } catch(e) { console.log('[RESTART] erro:', e.message); }
-  }, 500);
+app.get('/restart', (req, res) => {
+  res.json({ ok: true, message: 'Encerrando processo para Railway reiniciar...' });
+  setTimeout(() => { console.log('[RESTART] Encerrando processo...'); process.exit(0); }, 500);
 });
 
 app.post('/send', async (req, res) => {
@@ -125,12 +107,14 @@ const client = new Client({
 });
 
 client.on('qr', async (qr) => {
+  console.log('[BRIDGE] QR gerado! Tamanho:', qr.length);
   currentQR = qr;
   try { qrBase64 = await QRCode.toDataURL(qr); } catch(e) {}
   console.log('[WWEB] QR gerado! Acesse /qr.png para escanear.');
 });
 
 client.on('ready', () => {
+  console.log('[BRIDGE] WhatsApp conectado e pronto!');
   isConnected = true;
   currentQR = null;
   qrBase64 = null;

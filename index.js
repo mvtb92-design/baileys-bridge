@@ -20,16 +20,10 @@ let qrBase64 = null;
 let isConnected = false;
 const processedIds = new Set();
 
-// Limpa sessao corrompida e recria diretorio
-console.log('[BRIDGE] Limpando sessao para reconexao limpa...');
-try {
-  if (fs.existsSync(SESSION_PATH)) {
-    fs.rmSync(SESSION_PATH, { recursive: true, force: true });
-    console.log('[BRIDGE] Sessao removida');
-  }
-} catch(e) { console.log('[BRIDGE] Erro ao limpar sessao:', e.message); }
-fs.mkdirSync(SESSION_PATH, { recursive: true });
-console.log('[BRIDGE] Diretorio de sessao recriado');
+// Garante diretorio de sessao
+if (!fs.existsSync(SESSION_PATH)) {
+  fs.mkdirSync(SESSION_PATH, { recursive: true });
+}
 
 // Express
 const app = express();
